@@ -1,0 +1,253 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Comparator;
+public class BadmintonBooking {
+ private JFrame frame;
+ private JTextField usernameField, ageField, phoneField, emailField;
+ private JComboBox<String> genderBox, hourBox;
+ private JSpinner dateSpinner;
+ private JButton submitButton, removeButton, viewButton, sortButton, saveButton;
+ private ArrayList<Booking> bookings;
+ public static void main(String[] args) {
+ EventQueue.invokeLater(new Runnable() {
+ public void run() {
+ try {
+ BadmintonBooking window = new BadmintonBooking();
+ window.frame.setVisible(true);
+ } catch (Exception e) {
+ e.printStackTrace();
+ }
+ }
+ });
+ }
+ public BadmintonBooking() {
+ initialize();
+ }
+private void initialize() {
+ frame = new JFrame("Booking a Hall to Play Badminton");
+ frame.setBounds(100, 100, 450, 300);
+ frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+ frame.getContentPane().setLayout(new GridLayout(11, 2));
+ bookings = new ArrayList<>();
+ frame.getContentPane().add(new JLabel("Name:"));
+ usernameField = new JTextField();
+ frame.getContentPane().add(usernameField);
+ frame.getContentPane().add(new JLabel("Age:"));
+ ageField = new JTextField();
+ frame.getContentPane().add(ageField);
+ frame.getContentPane().add(new JLabel("Gender:"));
+ String[] genders = { "Male", "Female" };
+ genderBox = new JComboBox<>(genders);
+ frame.getContentPane().add(genderBox);
+ frame.getContentPane().add(new JLabel("Phone:"));
+ phoneField = new JTextField();
+ frame.getContentPane().add(phoneField);
+ frame.getContentPane().add(new JLabel("Email:"));
+ emailField = new JTextField();
+ frame.getContentPane().add(emailField);
+ frame.getContentPane().add(new JLabel("Date:"));
+ dateSpinner = new JSpinner(new SpinnerDateModel());
+ frame.getContentPane().add(dateSpinner);
+ frame.getContentPane().add(new JLabel("Hour:"));
+ String[] hours = { "1", "2", "3", "4", "5", "6" };
+ hourBox = new JComboBox<>(hours);
+ frame.getContentPane().add(hourBox);
+submitButton = new JButton("Submit");
+ frame.getContentPane().add(submitButton);
+ submitButton.addActionListener(new ActionListener() {
+ public void actionPerformed(ActionEvent e) {
+ addBooking();
+ }
+ });
+ removeButton = new JButton("Remove Booking");
+ frame.getContentPane().add(removeButton);
+ removeButton.addActionListener(new ActionListener() {
+ public void actionPerformed(ActionEvent e) {
+ removeBooking();
+ }
+ });
+ viewButton = new JButton("View Bookings");
+ frame.getContentPane().add(viewButton);
+ viewButton.addActionListener(new ActionListener() {
+ public void actionPerformed(ActionEvent e) {
+ viewBookings();
+ }
+ });
+ sortButton = new JButton("Sort Bookings");
+ frame.getContentPane().add(sortButton);
+ sortButton.addActionListener(new ActionListener() {
+ public void actionPerformed(ActionEvent e) {
+ sortBookings();
+ }
+ });
+ saveButton = new JButton("Save Booking");
+ frame.getContentPane().add(saveButton);
+ saveButton.addActionListener(new ActionListener() {
+ public void actionPerformed(ActionEvent e) {
+saveBookingsToFile();
+ }
+ });
+ }
+ private void addBooking() {
+ String username = usernameField.getText();
+ String ageText = ageField.getText();
+ String phone = phoneField.getText();
+ String email = emailField.getText();
+ String date = dateSpinner.getValue().toString();
+ String hourText = (String) hourBox.getSelectedItem();
+ if (username.isEmpty()) {
+ showErrorPopup("Please enter a name.");
+ return;
+ }
+ int age;
+ try {
+ age = Integer.parseInt(ageText);
+ } catch (NumberFormatException e) {
+ showErrorPopup("Please enter a valid age (numeric value).");
+ return;
+ }
+ if (!phone.matches("[0-9]+")) {
+ showErrorPopup("Please enter a valid phone number (without '-'.)");
+ return;
+ }
+ int hour;
+ try {
+ hour = Integer.parseInt(hourText);
+ } catch (NumberFormatException e) {
+ showErrorPopup("Please enter a valid hour (numeric value).");
+ return;
+}
+ String gender = (String) genderBox.getSelectedItem();
+ Booking booking = new Booking(username, age, gender, phone, email, date, 
+hour);
+ bookings.add(booking);
+ JOptionPane.showMessageDialog(frame, "Booking information:\n" + 
+booking.toString());
+ usernameField.setText("");
+ ageField.setText("");
+ phoneField.setText("");
+ emailField.setText("");
+ dateSpinner.setValue(new SpinnerDateModel().getValue());
+ hourBox.setSelectedIndex(0);
+ }
+ private void showErrorPopup(String errorMessage) {
+ JOptionPane.showMessageDialog(frame, errorMessage, "Error", 
+JOptionPane.ERROR_MESSAGE);
+ }
+ private void removeBooking() {
+ String[] bookingNames = new String[bookings.size()];
+ for (int i = 0; i < bookings.size(); i++) {
+ bookingNames[i] = bookings.get(i).username;
+ }
+ String selectedBooking = (String) JOptionPane.showInputDialog(frame, "Select 
+a booking to remove:", "Remove Booking", JOptionPane.PLAIN_MESSAGE, null, 
+bookingNames, bookingNames[0]);
+ if (selectedBooking != null) {
+ for (int i = 0; i < bookings.size(); i++) {
+ if (bookings.get(i).username.equals(selectedBooking)) {
+bookings.remove(i);
+ break;
+ }
+ }
+ }
+ }
+ private void viewBookings() {
+ StringBuilder bookingList = new StringBuilder();
+ for (Booking booking : bookings) {
+ bookingList.append(booking.toString()).append("\n\n");
+ }
+ JTextArea textArea = new JTextArea(bookingList.toString());
+ JScrollPane scrollPane = new JScrollPane(textArea);
+ textArea.setLineWrap(true);
+ textArea.setWrapStyleWord(true);
+ scrollPane.setPreferredSize(new Dimension(400, 200));
+ JOptionPane.showMessageDialog(frame, scrollPane, "Current Bookings", 
+JOptionPane.INFORMATION_MESSAGE);
+ }
+ private void sortBookings() {
+ String[] sortOptions = { "Name", "Age", "Gender", "Phone", "Email", "Date", 
+"Hour" };
+ String selectedOption = (String) JOptionPane.showInputDialog(frame, "Sort 
+bookings by:", "Sort Bookings", JOptionPane.PLAIN_MESSAGE, null, sortOptions, 
+sortOptions[0]);
+ if (selectedOption != null) {
+ switch (selectedOption) {
+ case "Name":
+ bookings.sort(Comparator.comparing(booking -> booking.username));
+ break;
+ case "Age":
+ bookings.sort(Comparator.comparingInt(booking -> booking.age));
+ break;
+case "Gender":
+ bookings.sort(Comparator.comparing(booking -> booking.gender));
+ break;
+ case "Phone":
+ bookings.sort(Comparator.comparing(booking -> booking.phone));
+ break;
+ case "Email":
+ bookings.sort(Comparator.comparing(booking -> booking.email));
+ break;
+ case "Date":
+ SimpleDateFormat sdf = new SimpleDateFormat("EEE MMM dd 
+HH:mm:ss z yyyy");
+ bookings.sort((booking1, booking2) -> {
+ try {
+ return 
+sdf.parse(booking1.date).compareTo(sdf.parse(booking2.date));
+ } catch (Exception e) {
+ return 0;
+ }
+ });
+ break;
+ case "Hour":
+ bookings.sort(Comparator.comparingInt(booking -> booking.hour));
+ break;
+ }
+ }
+ }
+ private void saveBookingsToFile() {
+ JFileChooser fileChooser = new JFileChooser();
+ fileChooser.setDialogTitle("Save Bookings");
+ int userSelection = fileChooser.showSaveDialog(frame);
+ if (userSelection == JFileChooser.APPROVE_OPTION) {
+ try (BufferedWriter writer = new BufferedWriter(new 
+FileWriter(fileChooser.getSelectedFile()))) {
+ for (Booking booking : bookings) {
+ writer.write(booking.toString());
+writer.newLine();
+ }
+ JOptionPane.showMessageDialog(frame, "Bookings saved 
+successfully!");
+ } catch (IOException e) {
+ JOptionPane.showMessageDialog(frame, "Error saving bookings: " + 
+e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+ }
+ }
+ }
+ static class Booking {
+ String username, gender, phone, email, date;
+ int age, hour;
+ public Booking(String username, int age, String gender, String phone, String 
+email, String date, int hour) {
+ this.username = username;
+ this.age = age;
+ this.gender = gender;
+ this.phone = phone;
+ this.email = email;
+ this.date = date;
+ this.hour = hour;
+ }
+ @Override
+ public String toString() {
+ return "Name: " + username + "\nAge: " + age + "\nGender: " + gender + 
+"\nPhone: " + phone + "\nEmail: " + email + "\nDate: " + date + "\nHour: " + hour;
+ }
+ }
+}
